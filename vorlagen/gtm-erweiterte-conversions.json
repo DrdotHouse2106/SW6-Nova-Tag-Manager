@@ -1,6 +1,6 @@
 {
   "exportFormatVersion": 2,
-  "exportTime": "2026-10-23 14:00:00",
+  "exportTime": "2026-10-29 12:00:00",
   "containerVersion": {
     "path": "accounts/0/containers/0/versions/0",
     "accountId": "0",
@@ -20,8 +20,8 @@
       {
         "accountId": "0",
         "containerId": "0",
-        "variableId": "1",
-        "name": "Nova – E-Mail",
+        "variableId": "9",
+        "name": "Nova – Kundendaten (user_data)",
         "type": "v",
         "parameter": [
           {
@@ -37,7 +37,31 @@
           {
             "type": "TEMPLATE",
             "key": "name",
-            "value": "user_data.email"
+            "value": "user_data"
+          }
+        ]
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "1",
+        "name": "Nova – E-Mail (SHA-256)",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "user_data.sha256_email_address"
           }
         ]
       },
@@ -45,7 +69,7 @@
         "accountId": "0",
         "containerId": "0",
         "variableId": "2",
-        "name": "Nova – Telefon",
+        "name": "Nova – Telefon (SHA-256)",
         "type": "v",
         "parameter": [
           {
@@ -61,7 +85,7 @@
           {
             "type": "TEMPLATE",
             "key": "name",
-            "value": "user_data.phone_number"
+            "value": "user_data.sha256_phone_number"
           }
         ]
       },
@@ -69,7 +93,7 @@
         "accountId": "0",
         "containerId": "0",
         "variableId": "3",
-        "name": "Nova – Vorname",
+        "name": "Nova – Vorname (SHA-256)",
         "type": "v",
         "parameter": [
           {
@@ -85,7 +109,7 @@
           {
             "type": "TEMPLATE",
             "key": "name",
-            "value": "user_data.address.first_name"
+            "value": "user_data.address.sha256_first_name"
           }
         ]
       },
@@ -93,7 +117,7 @@
         "accountId": "0",
         "containerId": "0",
         "variableId": "4",
-        "name": "Nova – Nachname",
+        "name": "Nova – Nachname (SHA-256)",
         "type": "v",
         "parameter": [
           {
@@ -109,7 +133,7 @@
           {
             "type": "TEMPLATE",
             "key": "name",
-            "value": "user_data.address.last_name"
+            "value": "user_data.address.sha256_last_name"
           }
         ]
       },

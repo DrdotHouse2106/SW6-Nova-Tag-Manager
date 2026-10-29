@@ -10,7 +10,7 @@ Schlanke Google-Tag-Manager-Integration für Shopware 6.7 mit **GA4-E-Commerce-D
 - Vollständiger GA4-E-Commerce-Datenlayer (siehe Tabelle unten)
 - `google_tag_params` für dynamisches Remarketing in Google Ads
 - **Consent Mode v2** mit Anbindung an den Shopware-Cookie-Banner (Einträge „Statistik“ und „Marketing“) oder an ein externes Consent-Tool
-- Drei Ladestrategien: sofort, nach dem Seitenaufbau (schneller) oder erst nach Zustimmung
+- Drei Ladestrategien: erst nach Zustimmung (Standard), sofort oder nach dem Seitenaufbau (schneller)
 - Optional serverseitiges Tagging über eigene Domain
 - Kauf wird auch beim Neuladen der Abschlussseite nur **einmal** gemeldet
 - Kompatibel mit HTTP-Cache: keine personenbezogenen Daten in gecachten Seiten
@@ -76,7 +76,7 @@ bin/console cache:clear
 | Einstellung | Bedeutung |
 |---|---|
 | Container-ID | `GTM-XXXXXXX` – leer lassen = in diesem Shop deaktiviert |
-| Container laden | **Sofort** (genaueste Daten), **nach dem Seitenaufbau** (bessere Ladezeit) oder **erst nach Zustimmung** |
+| Container laden | **Erst nach Zustimmung** (Standard seit 1.2.0: gtm.js erst nach Einwilligung in Statistik oder Marketing, bei externem Consent-Tool immer), **sofort** oder **nach dem Seitenaufbau** – die beiden letzten laden gtm.js schon vor der Einwilligung |
 | URL für serverseitiges Tagging | Optional, z. B. `https://sst.meinshop.de` |
 | Einwilligung verwalten über | **Shopware-Cookie-Banner** oder **externes Consent-Tool** |
 | Google-Ads-Remarketing | `google_tag_params` senden |
@@ -145,17 +145,20 @@ Ohne Vorschau-Modus zeigt Tag Assistant beim Container „keine Tags ausgewertet
 
 ### 8. Erweiterte Conversions (optional)
 
-Google Ads ordnet Käufe genauer zu, wenn beim Kauf Kundendaten mitgeschickt werden (Google hasht sie vor dem Senden).
+Google Ads ordnet Käufe genauer zu, wenn beim Kauf Kundendaten mitgeschickt werden. Der Nova Tag Manager liefert E-Mail, Telefon, Vor- und Nachname **bereits im Shop SHA-256-gehasht** – im Seitenquelltext und im Datenlayer steht davon kein Klartext.
 
 1. Shopware: *Nova Tag Manager → Konfigurieren* → **„Kundendaten für erweiterte Conversions (Google Ads)“** einschalten (je Verkaufskanal oder unter „Alle Verkaufskanäle“).
-   Beim Kauf stehen dann – **nur mit Marketing-Einwilligung** im Shopware-Cookie-Banner – im `purchase`-Ereignis:
-   - `ecommerce.user_email` – die E-Mail-Adresse
-   - `user_data` mit `email`, `phone_number` (Format `+49…`, sofern umrechenbar) und `address` (`first_name`, `last_name`, `street`, `city`, `postal_code`, `country`)
-2. GTM, nur E-Mail (schnell): im Kauf-Conversion-Tag **„Von Nutzern bereitgestellte Daten von Ihrer Website einbeziehen“** anhaken und eine Variable vom Typ „Von Nutzern bereitgestellte Daten“ wählen, deren E-Mail-Feld `{{ecommerce.user_email}}` nutzt (Datenschicht-Variable `ecommerce.user_email`).
-3. GTM, alle Daten: Vorlage [`vorlagen/gtm-erweiterte-conversions.json`](vorlagen/gtm-erweiterte-conversions.json) wie in Schritt 2 importieren (**Zusammenführen**, „0 Gelöscht“) – sie legt die Datenschicht-Variablen „Nova – E-Mail“, „Nova – Telefon“, „Nova – Vorname“ … an. Dann die Variable vom Typ „Von Nutzern bereitgestellte Daten“ öffnen → **„Manuelle Konfiguration“** → Felder E-Mail, Telefon, Vorname, Nachname, Straße, Ort, Postleitzahl, Land mit den Nova-Variablen belegen.
-   **Kein Häkchen im Kauf-Tag?** Das Häkchen „Von Nutzern bereitgestellte Daten …“ bietet GTM im Conversion-Tag nur an, wenn der Container einen **Google-Tag mit der Google-Ads-ID** (`AW-…`) enthält. Ohne ihn stattdessen einen eigenen Tag anlegen bzw. den vorhandenen nutzen: *Tag-Typ „Google Ads User-provided Data Event“*, Conversion-ID wie im Kauf-Tag, Feld „Von Nutzern bereitgestellte Daten“ = die manuelle Variable mit den Nova-Werten, Trigger = derselbe wie beim Kauf-Tag (`purchase`). Steht dort noch eine Variable im Modus **„Automatisch“**, auf die manuelle umstellen – die automatische Erkennung sucht Daten selbst auf der Seite und ist ungenauer.
+   Beim Kauf steht dann – **nur mit Marketing-Einwilligung** im Shopware-Cookie-Banner – im `purchase`-Ereignis `user_data` im Format, das Google für vorgehashte Daten erwartet:
+   - `sha256_email_address` – E-Mail (vor dem Hashen ohne Leerzeichen, klein geschrieben, bei gmail.com/googlemail.com ohne Punkte im Namensteil)
+   - `sha256_phone_number` – Telefon im Format `+49…` (E.164, nur wenn umrechenbar), dann gehasht
+   - `address` mit `sha256_first_name`, `sha256_last_name` (klein geschrieben, gehasht) sowie `street`, `city`, `postal_code`, `country` – diese vier nimmt Google nur **ungehasht** an
+   Alle Hashes sind 64-stellige Hex-Werte in Kleinbuchstaben.
+2. GTM, einfachster Weg: Vorlage [`vorlagen/gtm-erweiterte-conversions.json`](vorlagen/gtm-erweiterte-conversions.json) wie in Schritt 2 importieren (**Zusammenführen**, „0 Gelöscht“). Dann eine Variable vom Typ **„Von Nutzern bereitgestellte Daten“** öffnen bzw. anlegen → **„Code“** → als Variable **„Nova – Kundendaten (user_data)“** wählen (Datenschicht-Variable `user_data`, liefert das ganze Objekt mit den `sha256_…`-Schlüsseln). Diese Variable im Kauf-Conversion-Tag unter **„Von Nutzern bereitgestellte Daten von Ihrer Website einbeziehen“** eintragen.
+3. Alternativ **„Manuelle Konfiguration“**: Felder E-Mail, Telefon, Vorname, Nachname mit „Nova – E-Mail (SHA-256)“, „Nova – Telefon (SHA-256)“, „Nova – Vorname (SHA-256)“, „Nova – Nachname (SHA-256)“ belegen, Straße, Ort, Postleitzahl, Land mit „Nova – Straße“ … – Google erkennt die 64-stelligen Hex-Werte als bereits gehasht.
+   **Kein Häkchen im Kauf-Tag?** Das Häkchen „Von Nutzern bereitgestellte Daten …“ bietet GTM im Conversion-Tag nur an, wenn der Container einen **Google-Tag mit der Google-Ads-ID** (`AW-…`) enthält. Ohne ihn stattdessen einen eigenen Tag anlegen bzw. den vorhandenen nutzen: *Tag-Typ „Google Ads User-provided Data Event“*, Conversion-ID wie im Kauf-Tag, Feld „Von Nutzern bereitgestellte Daten“ = die Variable aus Schritt 2 oder 3, Trigger = derselbe wie beim Kauf-Tag (`purchase`). Steht dort noch eine Variable im Modus **„Automatisch“**, umstellen – die automatische Erkennung sucht Daten selbst auf der Seite und ist ungenauer.
+   **Umstieg von Version 1.1.x:** `ecommerce.user_email` und die Klartext-Schlüssel `user_data.email`, `user_data.phone_number`, `user_data.address.first_name`, `user_data.address.last_name` gibt es nicht mehr. Variablen, die darauf zeigen, auf die neuen Pfade umstellen (Vorlage erneut importieren oder Variable „Code“ wie in Schritt 2).
 4. Google Ads: *Ziele → Einstellungen → Erweiterte Conversions* aktivieren, Methode **Google Tag Manager**.
-5. In der Vorschau bei `purchase` → Reiter „Datenschicht“ prüfen, ob `user_data` da ist (nur nach „Alle akzeptieren“ im Cookie-Banner). Im Treffer an Google Ads steht dann `em=tv.1~em.…~fn0.…~ln0.…` (gehasht); mit `gcs=G100` (keine Einwilligung) bewusst ohne Kundendaten.
+5. In der Vorschau bei `purchase` → Reiter „Datenschicht“ prüfen, ob `user_data` da ist (nur nach „Alle akzeptieren“ im Cookie-Banner). Im Treffer an Google Ads steht dann `em=tv.1~em.…~fn0.…~ln0.…`; mit `gcs=G100` (keine Einwilligung) bewusst ohne Kundendaten.
 
 In der **Datenschutzerklärung** erwähnen, dass bei Einwilligung in Marketing-Cookies gehashte Kundendaten zur Conversion-Messung an Google übermittelt werden.
 

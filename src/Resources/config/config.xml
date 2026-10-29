@@ -19,7 +19,7 @@
             <name>loadStrategy</name>
             <label>When to load the container</label>
             <label lang="de-DE">Container laden</label>
-            <defaultValue>immediate</defaultValue>
+            <defaultValue>consent</defaultValue>
             <options>
                 <option>
                     <id>immediate</id>
@@ -37,6 +37,8 @@
                     <name lang="de-DE">Erst nach Zustimmung</name>
                 </option>
             </options>
+            <helpText lang="de-DE">„Erst nach Zustimmung“ lädt den Container erst, wenn im Cookie-Banner Statistik oder Marketing erlaubt wurde (bei externem Consent-Tool immer). „Sofort“ und „Nach dem Seitenaufbau“ laden gtm.js schon vor der Einwilligung.</helpText>
+            <helpText>"Only after consent" loads the container once statistics or marketing cookies are accepted (always with an external consent tool). The other options load gtm.js before consent.</helpText>
         </input-field>
 
         <input-field type="url">
@@ -96,7 +98,7 @@
             <label>Customer data for Google Ads enhanced conversions</label>
             <label lang="de-DE">Kundendaten für erweiterte Conversions (Google Ads)</label>
             <defaultValue>false</defaultValue>
-            <helpText lang="de-DE">Beim Kauf zusätzlich E-Mail, Telefon und Rechnungsadresse in den Datenlayer (user_data bzw. ecommerce.user_email) – nur mit Marketing-Einwilligung im Shopware-Cookie-Banner. Google hasht die Daten vor dem Senden. Im GTM-Kauf-Tag „Von Nutzern bereitgestellte Daten“ aktivieren. In der Datenschutzerklärung erwähnen.</helpText>
+            <helpText lang="de-DE">Beim Kauf zusätzlich E-Mail, Telefon, Name (im Shop SHA-256-gehasht) und Rechnungsadresse als user_data in den Datenlayer – nur mit Marketing-Einwilligung im Shopware-Cookie-Banner. Im GTM eine Variable „Von Nutzern bereitgestellte Daten“ (Typ „Code“, Datenschicht-Variable user_data) im Kauf-Tag eintragen, siehe README. In der Datenschutzerklärung erwähnen.</helpText>
         </input-field>
 
         <input-field type="bool">

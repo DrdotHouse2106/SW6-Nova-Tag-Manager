@@ -11,7 +11,7 @@
         {% set novaGtmConfig = {
             id: novaGtmId,
             url: config('NovaTagManager.config.gtmUrl')|default('https://www.googletagmanager.com')|trim('/', 'right'),
-            load: config('NovaTagManager.config.loadStrategy')|default('immediate'),
+            load: config('NovaTagManager.config.loadStrategy')|default('consent'),
             consent: config('NovaTagManager.config.consentSource')|default('shopware'),
             remarketing: config('NovaTagManager.config.remarketing') is same as(false) ? false : true,
             clicks: config('NovaTagManager.config.trackClicks') is same as(false) ? false : true,
@@ -25,8 +25,8 @@
             userData: novaGtmPage.userData ?? null
         } %}
 
-        {# Konfiguration als JSON – json_encode maskiert „/“, damit kann kein </script> entstehen #}
-        <script id="nova-gtm-config" type="application/json">{{ novaGtmConfig|json_encode|raw }}</script>
+        {# Konfiguration als JSON – < > & ' " als \u-Escapes, damit Suchbegriffe o. Ä. den Script-Block nicht brechen #}
+        <script id="nova-gtm-config" type="application/json">{{ novaGtmConfig|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP') b-or constant('JSON_HEX_APOS') b-or constant('JSON_HEX_QUOT'))|raw }}</script>
         <script>
             {% sw_include '@NovaTagManager/storefront/nova-tag-manager/head.js.twig' %}
         </script>

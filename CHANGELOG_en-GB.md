@@ -1,3 +1,8 @@
+# 1.2.0
+- Privacy: "When to load the container" now defaults to "Only after consent". On update the setting is set once to "Only after consent" in all sales channels and globally
+- Enhanced conversions: email, phone, first and last name are normalised and SHA-256-hashed in the shop (`sha256_email_address`, `sha256_phone_number`, `address.sha256_first_name`, `address.sha256_last_name`); `ecommerce.user_email` removed. Update GTM variables to the new paths
+- Config JSON in the page head escapes `< > & ' "`
+
 # 1.1.1
 - New plugin icon in Nova style
 - Repository renamed to SW6-Nova-Tag-Manager

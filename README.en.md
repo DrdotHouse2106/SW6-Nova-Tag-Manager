@@ -13,7 +13,8 @@ Lightweight Google Tag Manager integration for Shopware 6.7 with a **GA4 e-comme
 - Integration events: `nova:products-rendered`, `nova:search` ({ term, total }), `nova:search-open`, `nova:search-close` on `document`
 - `google_tag_params` for Google Ads dynamic remarketing
 - Consent Mode v2 connected to the Shopware cookie banner or an external consent tool
-- Load strategies: immediately, after page load, or only after consent
+- Load strategies: only after consent (default since 1.2.0), immediately, or after page load
+- Optional Google Ads enhanced conversions: email, phone, first and last name are SHA-256-hashed in the shop (`user_data.sha256_email_address`, `sha256_phone_number`, `address.sha256_first_name`, `address.sha256_last_name`); in GTM use a "User-provided data" variable of type "Code" with the data layer variable `user_data` (template `vorlagen/gtm-erweiterte-conversions.json`)
 - Optional server-side tagging URL
 - Purchase is reported only once, even when the finish page is reloaded
 - HTTP-cache safe: no personal data in cached pages

@@ -6,9 +6,11 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderAddress\OrderAddressEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;
 
 /**
- * Kundendaten für die „erweiterten Conversions“ von Google Ads – im Format, das Googles
- * „Von Nutzern bereitgestellte Daten“ erwartet (E-Mail klein geschrieben, Telefon im Format +49…).
- * Google hasht die Werte selbst, bevor sie gesendet werden.
+ * Kundendaten für die „erweiterten Conversions“ von Google Ads im Format, das Googles
+ * „Von Nutzern bereitgestellte Daten“ erwartet. E-Mail, Telefon, Vor- und Nachname werden
+ * normalisiert und serverseitig SHA-256-gehasht (`sha256_email_address`, `sha256_phone_number`,
+ * `address.sha256_first_name`, `address.sha256_last_name`); Straße, Ort, PLZ und Land nimmt
+ * Google nur ungehasht an.
  */
 class UserDataBuilder
 {
@@ -21,7 +23,7 @@ class UserDataBuilder
     ];
 
     /**
-     * @return array{email?: string, phone_number?: string, address?: array<string, string>}
+     * @return array{sha256_email_address?: string, sha256_phone_number?: string, address?: array<string, string>}
      */
     public static function fromOrder(OrderEntity $order): array
     {
@@ -29,7 +31,7 @@ class UserDataBuilder
 
         $email = self::email((string) $order->getOrderCustomer()?->getEmail());
         if ($email !== null) {
-            $data['email'] = $email;
+            $data['sha256_email_address'] = self::hash($email);
         }
 
         $address = self::billingAddress($order);
@@ -40,12 +42,12 @@ class UserDataBuilder
         $country = $address->getCountry()?->getIso();
         $phone = self::phone((string) $address->getPhoneNumber(), $country);
         if ($phone !== null) {
-            $data['phone_number'] = $phone;
+            $data['sha256_phone_number'] = self::hash($phone);
         }
 
         $data['address'] = array_filter([
-            'first_name' => trim((string) $address->getFirstName()),
-            'last_name' => trim((string) $address->getLastName()),
+            'sha256_first_name' => self::hashName((string) $address->getFirstName()),
+            'sha256_last_name' => self::hashName((string) $address->getLastName()),
             'street' => trim((string) $address->getStreet()),
             'city' => trim((string) $address->getCity()),
             'postal_code' => trim((string) $address->getZipcode()),
@@ -59,11 +61,35 @@ class UserDataBuilder
         return $data;
     }
 
+    /**
+     * Klein geschrieben, ohne Leerraum; bei gmail.com/googlemail.com ohne Punkte im Namensteil (Google-Vorgabe).
+     */
     public static function email(string $email): ?string
     {
         $email = mb_strtolower(trim($email));
+        if (filter_var($email, \FILTER_VALIDATE_EMAIL) === false) {
+            return null;
+        }
 
-        return filter_var($email, \FILTER_VALIDATE_EMAIL) !== false ? $email : null;
+        [$local, $domain] = explode('@', $email, 2);
+        if ($domain === 'gmail.com' || $domain === 'googlemail.com') {
+            $email = str_replace('.', '', $local) . '@' . $domain;
+        }
+
+        return $email;
+    }
+
+    /** SHA-256 als 64-stelliger Hex-String in Kleinbuchstaben */
+    public static function hash(string $value): string
+    {
+        return hash('sha256', $value);
+    }
+
+    private static function hashName(string $name): string
+    {
+        $name = mb_strtolower(trim($name));
+
+        return $name === '' ? '' : self::hash($name);
     }
 
     /**
